@@ -7,34 +7,24 @@
 #include <climits>
 #include <string>
 
-
-// Підсумок результатів для алгоритмів
-
 struct ResultSummary {
     double avgWaiting = 0.0;
     double avgTurnaround = 0.0;
     std::string name;
 };
 
-// Опис процесу
-
 struct Process {
-    int id;             // ID процесу
-    int arrivalTime;    // час приходу процесу
-    int burstTime;      // необхідний час процесора (тривалість виконання)
-    int priority;        // поточний пріоритет (менше значення = вищий пріоритет)
-    int initialPriority; // початковий пріоритет (для аналізу/статистики)
-
-    // Поля для результатів симуляції
-    int remainingTime;   // залишковий час виконання (для Round Robin / преемптивних алгоритмів)
-    int startTime;       // час початку виконання
-    int finishTime;      // час завершення
-    int waitingTime;     // час очікування
-    int turnaroundTime;  // час обороту (finish - arrival)
+    int id;             
+    int arrivalTime;    
+    int burstTime;      
+    int priority;        
+    int initialPriority; 
+    int remainingTime;   
+    int startTime;       
+    int finishTime;     
+    int waitingTime;    
+    int turnaroundTime;  
 };
-
-
-// Генерація випадкових процесів
 
 std::vector<Process> generateProcesses(int count) {
     std::vector<Process> processes;
@@ -43,9 +33,9 @@ std::vector<Process> generateProcesses(int count) {
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    std::uniform_int_distribution<int> arrivalDist(0, 10);  // час прибуття [0..10]
-    std::uniform_int_distribution<int> burstDist(1, 10);    // тривалість виконання [1..10]
-    std::uniform_int_distribution<int> prioDist(1, 5);      // пріоритет [1..5]
+    std::uniform_int_distribution<int> arrivalDist(0, 10); 
+    std::uniform_int_distribution<int> burstDist(1, 10);    
+    std::uniform_int_distribution<int> prioDist(1, 5);     
 
     for (int i = 0; i < count; ++i) {
         Process p;
@@ -67,9 +57,6 @@ std::vector<Process> generateProcesses(int count) {
     return processes;
 }
 
-
-// Виведення згенерованих процесів
-
 void printProcesses(const std::vector<Process>& processes) {
     std::cout << "Generated processes:\n";
     std::cout << std::left
@@ -90,17 +77,12 @@ void printProcesses(const std::vector<Process>& processes) {
     std::cout << "----------------------------------------\n";
 }
 
-
-// Реалізація FCFS
-
 ResultSummary simulateFCFS(std::vector<Process> processes) {
     int n = static_cast<int>(processes.size());
     if (n == 0) {
         std::cout << "\n=== FCFS Scheduling ===\nNo processes.\n";
         return { 0.0, 0.0, "FCFS" };
     }
-
-    // сортуємо за часом прибуття (якщо однаковий — за ID)
     std::sort(processes.begin(), processes.end(),
         [](const Process& a, const Process& b) {
             if (a.arrivalTime == b.arrivalTime)
@@ -125,7 +107,7 @@ ResultSummary simulateFCFS(std::vector<Process> processes) {
 
     for (auto& p : processes) {
         if (currentTime < p.arrivalTime)
-            currentTime = p.arrivalTime;  // процесор простоює, поки процес не прийде
+            currentTime = p.arrivalTime; 
 
         p.startTime = currentTime;
         p.finishTime = currentTime + p.burstTime;
@@ -157,9 +139,6 @@ ResultSummary simulateFCFS(std::vector<Process> processes) {
     return { avgW, avgT, "FCFS" };
 }
 
-
-// Реалізація алгоритму Round Robin
-
 ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
     int n = static_cast<int>(processes.size());
     if (n == 0) {
@@ -172,7 +151,6 @@ ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
         return { 0.0, 0.0, "Round Robin" };
     }
 
-    // Скидаємо поля, пов’язані з симуляцією
     for (auto& p : processes) {
         p.remainingTime = p.burstTime;
         p.startTime = -1;
@@ -187,11 +165,10 @@ ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
     int currentTime = 0;
     int completed = 0;
 
-    std::queue<int> readyQueue;            // індекси процесів у черзі
-    std::vector<bool> inQueue(n, false);   // чи знаходиться процес у черзі
-    std::vector<bool> finished(n, false);  // чи завершено процес
+    std::queue<int> readyQueue;           
+    std::vector<bool> inQueue(n, false);  
+    std::vector<bool> finished(n, false);  
 
-    // Допоміжна лямбда: додає в чергу всі процеси, які вже прибули до моменту time
     auto addArrived = [&](int time) {
         for (int i = 0; i < n; ++i) {
             if (!finished[i] && !inQueue[i] && processes[i].arrivalTime <= time) {
@@ -201,7 +178,6 @@ ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
         }
         };
 
-    // Починаємо з процесу з найменшим часом прибуття
     int firstIndex = 0;
     int earliestArrival = processes[0].arrivalTime;
     for (int i = 1; i < n; ++i) {
@@ -221,7 +197,6 @@ ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
 
     while (completed < n) {
         if (readyQueue.empty()) {
-            // Немає готових процесів — переходимо до наступного процесу, який прибуде
             int nextIndex = -1;
             int nextArrival = INT_MAX;
             for (int i = 0; i < n; ++i) {
@@ -230,7 +205,7 @@ ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
                     nextIndex = i;
                 }
             }
-            if (nextIndex == -1) break; // більше процесів немає
+            if (nextIndex == -1) break; 
             currentTime = nextArrival;
             readyQueue.push(nextIndex);
             inQueue[nextIndex] = true;
@@ -242,7 +217,6 @@ ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
 
         Process& p = processes[idx];
 
-        // Вперше цей процес отримує процесор
         if (p.startTime == -1) {
             p.startTime = currentTime;
         }
@@ -257,7 +231,6 @@ ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
             << " ran for " << runTime
             << ", remaining = " << p.remainingTime << "\n";
 
-        // За цей час інші процеси могли прибути
         addArrived(currentTime);
 
         if (p.remainingTime == 0) {
@@ -271,13 +244,11 @@ ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
             completed++;
         }
         else {
-            // Процес ще не завершився — повертаємо його в чергу
             readyQueue.push(idx);
             inQueue[idx] = true;
         }
     }
 
-    // Виведення підсумкової таблиці
     std::cout << "\nResult table (Round Robin):\n";
     std::cout << std::left
         << std::setw(5) << "ID"
@@ -310,9 +281,6 @@ ResultSummary simulateRoundRobin(std::vector<Process> processes, int quantum) {
     return { avgW, avgT, "Round Robin" };
 }
 
-
-// Планування за пріоритетом (непереривчасте)
-
 ResultSummary simulatePriority(std::vector<Process> processes) {
     int n = static_cast<int>(processes.size());
     if (n == 0) {
@@ -320,14 +288,14 @@ ResultSummary simulatePriority(std::vector<Process> processes) {
         return { 0.0, 0.0, "Priority" };
     }
 
-    // Reset fields
+ 
     for (auto& p : processes) {
-        p.remainingTime = p.burstTime; // Залишок часу виконання
-        p.startTime = -1; // Час старту
-        p.finishTime = -1; // Час завершення
-        p.waitingTime = 0; // Час очікування
-        p.turnaroundTime = 0; // Оборотний час
-        p.priority = p.initialPriority; // Відновлення початкового пріоритету
+        p.remainingTime = p.burstTime; 
+        p.startTime = -1;
+        p.finishTime = -1; 
+        p.waitingTime = 0; 
+        p.turnaroundTime = 0; 
+        p.priority = p.initialPriority; 
 
     }
 
@@ -345,7 +313,6 @@ ResultSummary simulatePriority(std::vector<Process> processes) {
         int best = -1;
         int bestPriority = INT_MAX;
 
-        //  Пошук процесу з найвищим пріоритетом серед доступних у currentTime
         for (int i = 0; i < n; ++i) {
             if (!done[i] && processes[i].arrivalTime <= currentTime) {
                 if (processes[i].priority < bestPriority) {
@@ -355,7 +322,6 @@ ResultSummary simulatePriority(std::vector<Process> processes) {
             }
         }
 
-        // Якщо жоден процес зараз недоступний → переходимо до найближчого за часом прибуття
         if (best == -1) {
             int nextArrival = INT_MAX;
             for (int i = 0; i < n; ++i) {
@@ -383,17 +349,16 @@ ResultSummary simulatePriority(std::vector<Process> processes) {
         totalTurnaround += p.turnaroundTime;
     }
 
-    //  Підсумкова таблиця результатів (планування за пріоритетом)
     std::cout << "\nResult table (Priority Scheduling):\n";
     std::cout << std::left
-        << std::setw(5) << "ID" // Ідентифікатор процесу
-        << std::setw(10) << "Arrive" // Час приходу
-        << std::setw(10) << "Burst" // Тривалість (CPU burst)
-        << std::setw(10) << "Prio" // Пріоритет
-        << std::setw(10) << "Start" // Час початку
-        << std::setw(10) << "Finish" // Час завершення
-        << std::setw(12) << "Waiting" // Час очікування
-        << std::setw(12) << "Turnaround" // Час обороту
+        << std::setw(5) << "ID" 
+        << std::setw(10) << "Arrive" 
+        << std::setw(10) << "Burst" 
+        << std::setw(10) << "Prio" 
+        << std::setw(10) << "Start" 
+        << std::setw(10) << "Finish" 
+        << std::setw(12) << "Waiting"
+        << std::setw(12) << "Turnaround" 
         << "\n";
 
     for (const auto& p : processes) {
@@ -418,9 +383,6 @@ ResultSummary simulatePriority(std::vector<Process> processes) {
     return { avgW, avgT, "Priority" };
 }
 
-
-// Планування Shortest Job First (SJF)
-
 ResultSummary simulateSJF(std::vector<Process> processes) {
     int n = static_cast<int>(processes.size());
     if (n == 0) {
@@ -428,7 +390,6 @@ ResultSummary simulateSJF(std::vector<Process> processes) {
         return { 0.0, 0.0, "SJF" };
     }
 
-    // Скидання полів, пов’язаних із симуляцією
     for (auto& p : processes) {
         p.remainingTime = p.burstTime;
         p.startTime = -1;
@@ -447,7 +408,6 @@ ResultSummary simulateSJF(std::vector<Process> processes) {
 
     std::vector<bool> done(n, false);
 
-    // Починаємо з найранішого часу прибуття
     int earliestArrival = INT_MAX;
     for (int i = 0; i < n; ++i) {
         if (processes[i].arrivalTime < earliestArrival) {
@@ -463,7 +423,6 @@ ResultSummary simulateSJF(std::vector<Process> processes) {
         int best = -1;
         int bestBurst = INT_MAX;
 
-        // Серед доступних процесів (arrivalTime <= currentTime) шукаємо той, що має найменший burstTime
         for (int i = 0; i < n; ++i) {
             if (!done[i] && processes[i].arrivalTime <= currentTime) {
                 if (processes[i].burstTime < bestBurst) {
@@ -478,7 +437,6 @@ ResultSummary simulateSJF(std::vector<Process> processes) {
             }
         }
 
-        // Якщо жоден процес зараз недоступний → переходимо до найближчого за часом прибуття
         if (best == -1) {
             int nextArrival = INT_MAX;
             for (int i = 0; i < n; ++i) {
@@ -538,9 +496,6 @@ ResultSummary simulateSJF(std::vector<Process> processes) {
     return { avgW, avgT, "SJF" };
 }
 
-
-// Динамічне планування за пріоритетом (з витісненням та старінням)
-
 ResultSummary simulateDynamicPriority(std::vector<Process> processes) {
     int n = static_cast<int>(processes.size());
     if (n == 0) {
@@ -548,7 +503,6 @@ ResultSummary simulateDynamicPriority(std::vector<Process> processes) {
         return { 0.0, 0.0, "Dynamic Priority" };
     }
 
-    // Скидаємо поля та відновлюємо початкові пріоритети
     for (auto& p : processes) {
         p.remainingTime = p.burstTime;
         p.startTime = -1;
@@ -568,7 +522,6 @@ ResultSummary simulateDynamicPriority(std::vector<Process> processes) {
 
     std::vector<bool> finished(n, false);
 
-    // Знаходимо найраніший час прибуття
     int earliestArrival = INT_MAX;
     for (int i = 0; i < n; ++i) {
         if (processes[i].arrivalTime < earliestArrival)
@@ -582,7 +535,6 @@ ResultSummary simulateDynamicPriority(std::vector<Process> processes) {
     std::cout << "\nExecution log (time = 1 unit per step):\n";
 
     while (completed < n) {
-        // Обираємо найкращий готовий процес за поточним (динамічним) пріоритетом
         int best = -1;
         int bestPrio = INT_MAX;
 
@@ -598,7 +550,6 @@ ResultSummary simulateDynamicPriority(std::vector<Process> processes) {
             }
         }
 
-        // Якщо жоден процес не готовий — перескакуємо до наступного часу прибуття (процесор простоює)
         if (best == -1) {
             int nextArrival = INT_MAX;
             for (int i = 0; i < n; ++i) {
@@ -614,12 +565,10 @@ ResultSummary simulateDynamicPriority(std::vector<Process> processes) {
         Process& p = processes[best];
 
         if (p.startTime == -1) {
-            p.startTime = currentTime; // перший вихід процесу на процесор
+            p.startTime = currentTime; 
         }
 
         int startT = currentTime;
-
-        // Виконуємо процес протягом 1 одиниці часу (можливе витіснення на кожному кроці)
         p.remainingTime--;
         currentTime++;
 
@@ -628,20 +577,17 @@ ResultSummary simulateDynamicPriority(std::vector<Process> processes) {
             << " (prio=" << p.priority << "), remaining="
             << p.remainingTime << "\n";
 
-        // Старіння (aging): підвищуємо пріоритет усіх інших готових і тих, що очікують
         for (int i = 0; i < n; ++i) {
             if (i == best) continue;
             if (!finished[i] &&
                 processes[i].arrivalTime <= currentTime &&
                 processes[i].remainingTime > 0) {
 
-                // Зменшуємо числове значення пріоритету, але не нижче 1
                 if (processes[i].priority > 1)
                     processes[i].priority--;
             }
         }
 
-        // Якщо процес щойно завершився
         if (p.remainingTime == 0) {
             finished[best] = true;
             p.finishTime = currentTime;
@@ -654,7 +600,6 @@ ResultSummary simulateDynamicPriority(std::vector<Process> processes) {
         }
     }
 
-    // Підсумкова таблиця
     std::cout << "\nResult table (Dynamic Priority):\n";
     std::cout << std::left
         << std::setw(5) << "ID"
@@ -691,29 +636,18 @@ ResultSummary simulateDynamicPriority(std::vector<Process> processes) {
     return { avgW, avgT, "Dynamic Priority" };
 }
 
-
-// Запуск усіх алгоритмів та підсумкова таблиця
-
 void runAllAlgorithms(const std::vector<Process>& base) {
     std::cout << "\n=== RUNNING ALL ALGORITHMS ON SAME PROCESS SET ===\n";
 
     std::vector<ResultSummary> results;
 
-    // FCFS
     results.push_back(simulateFCFS(base));
 
-    // Round Robin з фіксованим квантом (для порівняння)
     int quantum = 2;
     std::cout << "\n[INFO] Using quantum = " << quantum << " for Round Robin in summary mode.\n";
     results.push_back(simulateRoundRobin(base, quantum));
-
-    // Пріоритетний 
     results.push_back(simulatePriority(base));
-
-    // Динамічний пріоритет (зі старінням)
     results.push_back(simulateDynamicPriority(base));
-
-    // SJF
     results.push_back(simulateSJF(base));
 
     std::cout << "\n=== SUMMARY TABLE (AVERAGE TIMES) ===\n";
@@ -734,9 +668,6 @@ void runAllAlgorithms(const std::vector<Process>& base) {
     std::cout << "---------------------------------------------\n";
 }
 
-// ------------------------
-// MAIN
-// ------------------------
 int main() {
     int n;
     std::cout << "Enter number of processes: ";
